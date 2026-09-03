@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+<title>Satisfaction Jarnias</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&family=Ubuntu+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <img src="logo.png" alt="Jarnias, les experts de la hauteur" />
+    <h1>Votre avis sur notre intervention</h1>
+    <p>Quelques minutes suffisent. Vos réponses nous aident à améliorer nos prestations.</p>
+  </div>
+
+  <form id="survey-form" class="card" novalidate>
+    <div class="field">
+      <label for="f-chantier">Chantier / référence d'intervention</label>
+      <input type="text" id="f-chantier" placeholder="Ex : Toiture église Saint-Martin" />
+    </div>
+    <div class="field">
+      <label for="f-nom">Votre nom (optionnel)</label>
+      <input type="text" id="f-nom" placeholder="Ex : M. Dupont" />
+    </div>
+
+    <div class="field" data-criterion="qualite">
+      <fieldset>
+        <legend>Qualité du travail réalisé</legend>
+        <div class="stars" role="radiogroup" aria-label="Qualité du travail réalisé"></div>
+      </fieldset>
+    </div>
+    <div class="field" data-criterion="delai">
+      <fieldset>
+        <legend>Respect du planning annoncé</legend>
+        <div class="stars" role="radiogroup" aria-label="Respect du planning annoncé"></div>
+      </fieldset>
+    </div>
+    <div class="field" data-criterion="securite">
+      <fieldset>
+        <legend>Sécurité sur le chantier</legend>
+        <div class="stars" role="radiogroup" aria-label="Sécurité sur le chantier"></div>
+      </fieldset>
+    </div>
+    <div class="field" data-criterion="proprete">
+      <fieldset>
+        <legend>Propreté et rangement après intervention</legend>
+        <div class="stars" role="radiogroup" aria-label="Propreté et rangement après intervention"></div>
+      </fieldset>
+    </div>
+    <div class="field" data-criterion="communication">
+      <fieldset>
+        <legend>Communication avec l'équipe</legend>
+        <div class="stars" role="radiogroup" aria-label="Communication avec l'équipe"></div>
+      </fieldset>
+    </div>
+    <div class="field" data-criterion="recommandation">
+      <fieldset>
+        <legend>Recommanderiez-vous Jarnias ?</legend>
+        <div class="stars" role="radiogroup" aria-label="Recommanderiez-vous Jarnias ?"></div>
+      </fieldset>
+    </div>
+
+    <div class="field">
+      <label for="f-commentaire">Un commentaire à ajouter ? (optionnel)</label>
+      <textarea id="f-commentaire" placeholder="Vos remarques, suggestions..."></textarea>
+    </div>
+
+    <div id="form-status" class="status-msg" hidden></div>
+
+    <div class="submit-row">
+      <button type="submit" class="primary" id="submit-btn">Envoyer mon avis</button>
+    </div>
+  </form>
+
+  <div id="thankyou" class="card thankyou" hidden>
+    <div class="big">Merci !</div>
+    <p>Votre avis a bien été enregistré. Nous vous remercions pour votre confiance.</p>
+    <button type="button" class="ghost" id="new-response-btn">Laisser un autre avis</button>
+  </div>
+
+  <footer>Jarnias — Les experts de la hauteur</footer>
+</div>
+
+<!-- Client Supabase : cree la connexion entre cette page et votre base de donnees -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ---- Configuration : vos identifiants de projet Supabase ----
+  // La cle "anon" est publique par design : elle est protegee par les regles
+  // RLS definies dans la base (voir le script SQL), pas par le secret.
+  const SUPABASE_URL = "https://jaxvxmxumqqiaxztjnog.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpheHZ4bXh1bXFxaWF4enRqbm9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgzODUwOTIsImV4cCI6MjEwMzk2MTA5Mn0.x1odY-__nHZl4NQYfaqi63upJe6OhrV-KuTQmUbm8wU";
+
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ---- Etoiles de notation ----
+  const CRITERIA = [
+    { key: "qualite", label: "Qualité du travail réalisé" },
+    { key: "delai", label: "Respect du planning annoncé" },
+    { key: "securite", label: "Sécurité sur le chantier" },
+    { key: "proprete", label: "Propreté et rangement après intervention" },
+    { key: "communication", label: "Communication avec l'équipe" },
+    { key: "recommandation", label: "Recommanderiez-vous Jarnias ?" }
+  ];
+  const ratings = {};
+
+  function buildStars(container, key) {
+    container.innerHTML = "";
+    for (let i = 1; i <= 5; i++) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "star-btn";
+      btn.textContent = "★";
+      btn.setAttribute("aria-pressed", "false");
+      btn.addEventListener("click", () => {
+        ratings[key] = i;
+        Array.from(container.children).forEach((c, idx) => {
+          const filled = idx < i;
+          c.classList.toggle("filled", filled);
+          c.setAttribute("aria-pressed", filled ? "true" : "false");
+        });
+      });
+      container.appendChild(btn);
+    }
+  }
+  CRITERIA.forEach((c) => {
+    const el = document.querySelector(`[data-criterion="${c.key}"] .stars`);
+    if (el) buildStars(el, c.key);
+  });
+
+  // ---- Envoi du formulaire ----
+  const form = document.getElementById("survey-form");
+  const formStatus = document.getElementById("form-status");
+  const submitBtn = document.getElementById("submit-btn");
+  const thankyou = document.getElementById("thankyou");
+
+  function showStatus(message, type) {
+    formStatus.textContent = message;
+    formStatus.className = "status-msg " + (type || "info");
+    formStatus.hidden = false;
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    formStatus.hidden = true;
+
+    const missing = CRITERIA.filter((c) => !ratings[c.key]);
+    if (missing.length) {
+      showStatus("Merci de donner une note pour : " + missing.map((c) => c.label).join(", "), "error");
+      return;
+    }
+
+    const values = CRITERIA.map((c) => ratings[c.key]);
+    const moyenne = Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Envoi en cours…";
+
+    const { error } = await supabaseClient.from("reponses").insert([{
+      chantier: document.getElementById("f-chantier").value.trim(),
+      client_nom: document.getElementById("f-nom").value.trim(),
+      qualite: ratings.qualite,
+      delai: ratings.delai,
+      securite: ratings.securite,
+      proprete: ratings.proprete,
+      communication: ratings.communication,
+      recommandation: ratings.recommandation,
+      moyenne: moyenne,
+      commentaire: document.getElementById("f-commentaire").value.trim()
+    }]);
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Envoyer mon avis";
+
+    if (error) {
+      console.error(error);
+      showStatus("L'envoi a échoué. Merci de réessayer.", "error");
+      return;
+    }
+
+    form.hidden = true;
+    thankyou.hidden = false;
+  });
+
+  document.getElementById("new-response-btn").addEventListener("click", () => {
+    form.reset();
+    Object.keys(ratings).forEach((k) => delete ratings[k]);
+    document.querySelectorAll(".star-btn").forEach((b) => {
+      b.classList.remove("filled");
+      b.setAttribute("aria-pressed", "false");
+    });
+    thankyou.hidden = true;
+    form.hidden = false;
+  });
+</script>
+</body>
+</html>

@@ -172,3 +172,20 @@ td.num { font-family: 'Ubuntu Mono', monospace; font-variant-numeric: tabular-nu
 
 .login-card { max-width: 360px; margin: 60px auto 0; display: flex; flex-direction: column; gap: 18px; }
 .login-card h1 { font-size: 1.2rem; margin: 0; text-align: center; }
+
+.toggle-group { display: flex; gap: 10px; }
+.toggle-btn {
+  flex: 1;
+  font: inherit; font-weight: 500;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.toggle-btn.selected { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
+
+.conditional-group { display: flex; flex-direction: column; gap: 0; transition: opacity .15s ease; }
+.conditional-group.disabled { opacity: 0.4; pointer-events: none; }
+.conditional-group .hint { margin-top: -6px; margin-bottom: 18px; }

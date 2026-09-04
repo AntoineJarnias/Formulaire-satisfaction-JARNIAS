@@ -20,43 +20,63 @@
   </div>
 
   <form id="survey-form" class="card" novalidate>
+
     <div class="field">
-      <label for="f-chantier">Chantier / référence d'intervention</label>
+      <label for="f-chantier">Référence de chantier</label>
       <input type="text" id="f-chantier" placeholder="Ex : Toiture église Saint-Martin" />
     </div>
     <div class="field">
-      <label for="f-nom">Votre nom (optionnel)</label>
-      <input type="text" id="f-nom" placeholder="Ex : M. Dupont" />
+      <label for="f-entreprise">Entreprise cliente</label>
+      <input type="text" id="f-entreprise" placeholder="Ex : SCI Les Tilleuls" />
+    </div>
+    <div class="field">
+      <label for="f-nom">Nom et prénom</label>
+      <input type="text" id="f-nom" placeholder="Ex : Jean Dupont" />
+    </div>
+
+    <div class="field">
+      <fieldset>
+        <legend>Étiez-vous présent lors de l'intervention ?</legend>
+        <div class="toggle-group" id="present-toggle" role="radiogroup" aria-label="Étiez-vous présent lors de l'intervention ?">
+          <button type="button" class="toggle-btn" data-value="oui">Oui</button>
+          <button type="button" class="toggle-btn" data-value="non">Non</button>
+        </div>
+      </fieldset>
+    </div>
+
+    <div id="conditional-group" class="conditional-group disabled">
+      <p class="hint">Ces questions portent sur le déroulement du chantier — répondez-y si vous étiez présent.</p>
+
+      <div class="field" data-criterion="communication_avant">
+        <fieldset>
+          <legend>Communication avant le chantier</legend>
+          <div class="stars" role="radiogroup" aria-label="Communication avant le chantier"></div>
+        </fieldset>
+      </div>
+      <div class="field" data-criterion="securite">
+        <fieldset>
+          <legend>Sécurité sur le chantier</legend>
+          <div class="stars" role="radiogroup" aria-label="Sécurité sur le chantier"></div>
+        </fieldset>
+      </div>
+      <div class="field" data-criterion="adaptation">
+        <fieldset>
+          <legend>Capacité à s'adapter aux imprévus</legend>
+          <div class="stars" role="radiogroup" aria-label="Capacité à s'adapter aux imprévus"></div>
+        </fieldset>
+      </div>
+      <div class="field" data-criterion="accueil">
+        <fieldset>
+          <legend>Accueil et écoute de l'équipe sur place</legend>
+          <div class="stars" role="radiogroup" aria-label="Accueil et écoute de l'équipe sur place"></div>
+        </fieldset>
+      </div>
     </div>
 
     <div class="field" data-criterion="qualite">
       <fieldset>
-        <legend>Qualité du travail réalisé</legend>
-        <div class="stars" role="radiogroup" aria-label="Qualité du travail réalisé"></div>
-      </fieldset>
-    </div>
-    <div class="field" data-criterion="delai">
-      <fieldset>
-        <legend>Respect du planning annoncé</legend>
-        <div class="stars" role="radiogroup" aria-label="Respect du planning annoncé"></div>
-      </fieldset>
-    </div>
-    <div class="field" data-criterion="securite">
-      <fieldset>
-        <legend>Sécurité sur le chantier</legend>
-        <div class="stars" role="radiogroup" aria-label="Sécurité sur le chantier"></div>
-      </fieldset>
-    </div>
-    <div class="field" data-criterion="proprete">
-      <fieldset>
-        <legend>Propreté et rangement après intervention</legend>
-        <div class="stars" role="radiogroup" aria-label="Propreté et rangement après intervention"></div>
-      </fieldset>
-    </div>
-    <div class="field" data-criterion="communication">
-      <fieldset>
-        <legend>Communication avec l'équipe</legend>
-        <div class="stars" role="radiogroup" aria-label="Communication avec l'équipe"></div>
+        <legend>Qualité et finition du travail réalisé</legend>
+        <div class="stars" role="radiogroup" aria-label="Qualité et finition du travail réalisé"></div>
       </fieldset>
     </div>
     <div class="field" data-criterion="recommandation">
@@ -87,26 +107,46 @@
   <footer>Jarnias — Les experts de la hauteur</footer>
 </div>
 
-<!-- Client Supabase : cree la connexion entre cette page et votre base de donnees -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // ---- Configuration : vos identifiants de projet Supabase ----
-  // La cle "anon" est publique par design : elle est protegee par les regles
-  // RLS definies dans la base (voir le script SQL), pas par le secret.
   const SUPABASE_URL = "https://jaxvxmxumqqiaxztjnog.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpheHZ4bXh1bXFxaWF4enRqbm9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgzODUwOTIsImV4cCI6MjEwMzk2MTA5Mn0.x1odY-__nHZl4NQYfaqi63upJe6OhrV-KuTQmUbm8wU";
-
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+  // ---- Question "presence" (Oui / Non) ----
+  let present = null; // null = pas encore choisi, true/false ensuite
+  const presentToggle = document.getElementById("present-toggle");
+  const conditionalGroup = document.getElementById("conditional-group");
+  const CONDITIONAL_KEYS = ["communication_avant", "securite", "adaptation", "accueil"];
+
+  presentToggle.querySelectorAll(".toggle-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      present = btn.dataset.value === "oui";
+      presentToggle.querySelectorAll(".toggle-btn").forEach((b) => b.classList.toggle("selected", b === btn));
+      conditionalGroup.classList.toggle("disabled", !present);
+      if (!present) {
+        // On efface les notes deja saisies puisqu'elles ne seront pas envoyees
+        CONDITIONAL_KEYS.forEach((k) => delete ratings[k]);
+        conditionalGroup.querySelectorAll(".star-btn").forEach((b) => {
+          b.classList.remove("filled");
+          b.setAttribute("aria-pressed", "false");
+        });
+      }
+    });
+  });
+
   // ---- Etoiles de notation ----
-  const CRITERIA = [
-    { key: "qualite", label: "Qualité du travail réalisé" },
-    { key: "delai", label: "Respect du planning annoncé" },
-    { key: "securite", label: "Sécurité sur le chantier" },
-    { key: "proprete", label: "Propreté et rangement après intervention" },
-    { key: "communication", label: "Communication avec l'équipe" },
+  const ALWAYS_CRITERIA = [
+    { key: "qualite", label: "Qualité et finition du travail réalisé" },
     { key: "recommandation", label: "Recommanderiez-vous Jarnias ?" }
   ];
+  const CONDITIONAL_CRITERIA = [
+    { key: "communication_avant", label: "Communication avant le chantier" },
+    { key: "securite", label: "Sécurité sur le chantier" },
+    { key: "adaptation", label: "Capacité à s'adapter aux imprévus" },
+    { key: "accueil", label: "Accueil et écoute de l'équipe sur place" }
+  ];
+  const ALL_CRITERIA = CONDITIONAL_CRITERIA.concat(ALWAYS_CRITERIA);
   const ratings = {};
 
   function buildStars(container, key) {
@@ -128,7 +168,7 @@
       container.appendChild(btn);
     }
   }
-  CRITERIA.forEach((c) => {
+  ALL_CRITERIA.forEach((c) => {
     const el = document.querySelector(`[data-criterion="${c.key}"] .stars`);
     if (el) buildStars(el, c.key);
   });
@@ -149,30 +189,40 @@
     e.preventDefault();
     formStatus.hidden = true;
 
-    const missing = CRITERIA.filter((c) => !ratings[c.key]);
+    if (present === null) {
+      showStatus("Merci d'indiquer si vous étiez présent lors de l'intervention.", "error");
+      return;
+    }
+
+    const requiredCriteria = present ? ALL_CRITERIA : ALWAYS_CRITERIA;
+    const missing = requiredCriteria.filter((c) => !ratings[c.key]);
     if (missing.length) {
       showStatus("Merci de donner une note pour : " + missing.map((c) => c.label).join(", "), "error");
       return;
     }
 
-    const values = CRITERIA.map((c) => ratings[c.key]);
-    const moyenne = Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
+    const answeredValues = requiredCriteria.map((c) => ratings[c.key]);
+    const moyenne = Math.round((answeredValues.reduce((a, b) => a + b, 0) / answeredValues.length) * 10) / 10;
 
     submitBtn.disabled = true;
     submitBtn.textContent = "Envoi en cours…";
 
-    const { error } = await supabaseClient.from("reponses").insert([{
+    const payload = {
       chantier: document.getElementById("f-chantier").value.trim(),
-      client_nom: document.getElementById("f-nom").value.trim(),
+      entreprise: document.getElementById("f-entreprise").value.trim(),
+      nom: document.getElementById("f-nom").value.trim(),
+      present: present,
+      communication_avant: present ? ratings.communication_avant : null,
+      securite: present ? ratings.securite : null,
+      adaptation: present ? ratings.adaptation : null,
+      accueil: present ? ratings.accueil : null,
       qualite: ratings.qualite,
-      delai: ratings.delai,
-      securite: ratings.securite,
-      proprete: ratings.proprete,
-      communication: ratings.communication,
       recommandation: ratings.recommandation,
       moyenne: moyenne,
       commentaire: document.getElementById("f-commentaire").value.trim()
-    }]);
+    };
+
+    const { error } = await supabaseClient.from("reponses").insert([payload]);
 
     submitBtn.disabled = false;
     submitBtn.textContent = "Envoyer mon avis";
@@ -194,6 +244,9 @@
       b.classList.remove("filled");
       b.setAttribute("aria-pressed", "false");
     });
+    present = null;
+    presentToggle.querySelectorAll(".toggle-btn").forEach((b) => b.classList.remove("selected"));
+    conditionalGroup.classList.add("disabled");
     thankyou.hidden = true;
     form.hidden = false;
   });

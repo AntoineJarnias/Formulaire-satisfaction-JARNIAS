@@ -46,7 +46,7 @@
             <option value="30">30 derniers jours</option>
             <option value="90">90 derniers jours</option>
           </select>
-          <button type="button" class="ghost" id="export-csv-btn">Exporter en CSV</button>
+          <button type="button" class="ghost" id="export-xlsx-btn">Exporter en Excel</button> <button type="button" class="ghost" id="export-csv-btn">Exporter en CSV</button>
           <button type="button" class="ghost" id="logout-btn">Se déconnecter</button>
         </div>
       </div>
@@ -241,5 +241,5 @@
 
   checkSession();
 </script>
-</body>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script> <script src="export-excel.js"></script> </body>
 </html>
